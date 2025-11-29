@@ -2,6 +2,8 @@ package de.miraculixx.veinminerClient
 
 import com.mojang.logging.LogUtils
 import de.miraculixx.veinminer.config.UpdateManager
+import de.miraculixx.veinminerClient.config.ClientConfigManager
+import de.miraculixx.veinminerClient.constants.KEY_TOGGLE_MODE
 import de.miraculixx.veinminerClient.constants.KEY_VEINMINE
 import de.miraculixx.veinminerClient.network.NetworkManager
 import de.miraculixx.veinminerClient.render.HUDRenderer
@@ -38,6 +40,7 @@ class VeinminerClient : ClientModInitializer {
 
         // Register keybinds
         KEY_VEINMINE
+        KEY_TOGGLE_MODE
 
         ClientPlayConnectionEvents.JOIN.register { packet, sender, mc ->
             isSinglePlayer = mc.singleplayerServer != null
@@ -63,6 +66,16 @@ class VeinminerClient : ClientModInitializer {
         }
 
         ClientTickEvents.END_CLIENT_TICK.register {
+            // Check for toggle mode keybind press
+            while (KEY_TOGGLE_MODE.consumeClick()) {
+                val settings = ClientConfigManager.settings
+                settings.toggleMode = !settings.toggleMode
+                ClientConfigManager.save()
+
+                val modeKey = if (settings.toggleMode) "veinminer.mode.toggle" else "veinminer.mode.hold"
+                client.gui.setOverlayMessage(Component.translatable(modeKey), false)
+            }
+
             KeyBindManager.tick()
         }
 

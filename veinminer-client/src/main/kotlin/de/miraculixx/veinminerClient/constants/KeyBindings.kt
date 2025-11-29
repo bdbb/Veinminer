@@ -7,6 +7,7 @@ import net.minecraft.client.KeyMapping
 import net.minecraft.resources.ResourceLocation
 
 val KEY_VEINMINE = registerKeyBinding("veinmine", InputConstants.KEY_Y)
+val KEY_TOGGLE_MODE = registerKeyBinding("toggle_mode", InputConstants.UNKNOWN.value)
 
 private fun registerKeyBinding(id: String, key: Int) = KeyBindingHelper.registerKeyBinding(
     KeyMapping(

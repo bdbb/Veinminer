@@ -1,5 +1,6 @@
 package de.miraculixx.veinminerClient
 
+import de.miraculixx.veinminerClient.config.ClientConfigManager
 import de.miraculixx.veinminerClient.constants.KEY_VEINMINE
 import de.miraculixx.veinminerClient.network.NetworkManager
 import de.miraculixx.veinminerClient.render.BlockHighlightingRenderer
@@ -21,33 +22,76 @@ object KeyBindManager {
         }
     var notifiedOnce = false
 
+    // For toggle mode: tracks the toggled state
+    private var toggledOn = false
+    // For toggle mode: tracks if key was down last tick to detect press edge
+    private var wasKeyDown = false
 
     fun tick() {
-        if (KEY_VEINMINE.isDown) {
-            // Notify user if not active
-            if (!NetworkManager.isVeinminerActive) {
-                if (!notifiedOnce) {
-                    notifiedOnce = true
-                    val mc = Minecraft.getInstance()
-                    mc.toastManager.addToast(
-                        SystemToast.multiline(mc, SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
-                            Component.translatable("veinminer.disabled.title"),
-                            Component.translatable("veinminer.disabled.subtitle")
-                        )
-                    )
-                }
-                return
+        val isToggleMode = ClientConfigManager.settings.toggleMode
+        val keyDown = KEY_VEINMINE.isDown
+
+        // Handle toggle mode
+        if (isToggleMode) {
+            // Detect key press edge (was not down, now is down)
+            if (keyDown && !wasKeyDown) {
+                toggledOn = !toggledOn
             }
+            wasKeyDown = keyDown
 
-            if (!isPressed) isPressed = true
-            checkBlockTarget()
-            scrollPattern()
+            if (toggledOn) {
+                // Notify user if not active
+                if (!NetworkManager.isVeinminerActive) {
+                    if (!notifiedOnce) {
+                        notifiedOnce = true
+                        val mc = Minecraft.getInstance()
+                        mc.toastManager.addToast(
+                            SystemToast.multiline(mc, SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                                Component.translatable("veinminer.disabled.title"),
+                                Component.translatable("veinminer.disabled.subtitle")
+                            )
+                        )
+                    }
+                    return
+                }
 
+                if (!isPressed) isPressed = true
+                checkBlockTarget()
+                scrollPattern()
+            } else {
+                if (isPressed) isPressed = false
+                HUDRenderer.updateTarget(null)
+                BlockHighlightingRenderer.setShape(emptyList())
+                lastTarget = null
+            }
         } else {
-            if (isPressed) isPressed = false
-            HUDRenderer.updateTarget(null)
-            BlockHighlightingRenderer.setShape(emptyList())
-            lastTarget = null
+            // Original hold mode behavior
+            if (keyDown) {
+                // Notify user if not active
+                if (!NetworkManager.isVeinminerActive) {
+                    if (!notifiedOnce) {
+                        notifiedOnce = true
+                        val mc = Minecraft.getInstance()
+                        mc.toastManager.addToast(
+                            SystemToast.multiline(mc, SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+                                Component.translatable("veinminer.disabled.title"),
+                                Component.translatable("veinminer.disabled.subtitle")
+                            )
+                        )
+                    }
+                    return
+                }
+
+                if (!isPressed) isPressed = true
+                checkBlockTarget()
+                scrollPattern()
+
+            } else {
+                if (isPressed) isPressed = false
+                HUDRenderer.updateTarget(null)
+                BlockHighlightingRenderer.setShape(emptyList())
+                lastTarget = null
+            }
         }
     }
 
@@ -77,5 +121,7 @@ object KeyBindManager {
 
     fun onDisconnect() {
         notifiedOnce = false
+        toggledOn = false
+        wasKeyDown = false
     }
 }
